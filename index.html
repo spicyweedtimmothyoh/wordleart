@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordle Art Solver</title>
+<style>
+body {
+  font-family: 'Roboto Mono', monospace;
+  background: linear-gradient(120deg,#0f0f17,#1a1a27);
+  color: white;
+  text-align: center;
+  padding: 20px;
+}
+
+h1 { margin-bottom: 10px; color:#c792ff; text-shadow:0 0 10px #b374ff; }
+
+input, button {
+  font-size: 16px;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+}
+
+button {
+  background: #b374ff;
+  color:white;
+  cursor:pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #c792ff;
+  box-shadow: 0 0 15px #b374ff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 60px);
+  grid-gap: 6px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.cell {
+  width: 60px;
+  height: 60px;
+  background:#222;
+  border-radius:10px;
+  border:1px solid #555;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.cell:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px #c792ff;
+}
+
+.filled {
+  background: #b374ff;
+  box-shadow: 0 0 15px #d3a7ff;
+}
+
+#suggestions {
+  margin-top: 25px;
+  max-width: 600px;
+  margin-left:auto;
+  margin-right:auto;
+  text-align:left;
+  padding: 15px;
+  border-radius: 10px;
+  background: rgba(30,30,40,0.9);
+  box-shadow: 0 0 15px rgba(180,116,255,0.5);
+  max-height: 300px;
+  overflow-y: auto;
+}
+</style>
+</head>
+<body>
+
+<h1>Wordle Art Solver</h1>
+<input id="wordInput" placeholder="Enter today's Wordle" maxlength="5">
+<button onclick="initGrid()">Start</button>
+<div id="gridContainer"></div>
+<div id="suggestions"></div>
+
+<script>
+let dictionary = [];
+let word = "";
+let cells = [];
+
+// fetch dictionary from external file
+fetch('words.txt')
+  .then(res => res.text())
+  .then(txt => {
+    dictionary = txt
+      .split('\n')
+      .map(w => w.trim().toLowerCase())
+      .filter(w => w.length === 5);
+    console.log('Dictionary loaded: ' + dictionary.length + ' words');
+  })
+  .catch(err => {
+    console.error('Failed to load dictionary:', err);
+    alert('Could not load dictionary');
+  });
+
+function initGrid(){
+  word = document.getElementById("wordInput").value.toLowerCase();
+  if(word.length!==5){ alert("Word must be 5 letters"); return; }
+
+  const container = document.getElementById("gridContainer");
+  container.innerHTML = "";
+  cells = [];
+
+  for(let row=0; row<6; row++){
+    const rowDiv = document.createElement("div");
+    rowDiv.className="grid";
+    let rowCells=[];
+    for(let col=0; col<5; col++){
+      const cell = document.createElement("div");
+      cell.className="cell";
+      cell.dataset.row=row;
+      cell.dataset.col=col;
+      cell.addEventListener("click",()=>{ cell.classList.toggle("filled"); });
+      rowDiv.appendChild(cell);
+      rowCells.push(cell);
+    }
+    container.appendChild(rowDiv);
+    cells.push(rowCells);
+  }
+
+  document.getElementById("suggestions").innerHTML = '<button onclick="generateSequence()">Generate Word Sequence</button>';
+}
+
+function generateSequence(){
+  if(dictionary.length === 0){
+    alert("Dictionary not loaded yet — try refreshing or use Live Server");
+    return;
+  }
+
+  let sequence=[];
+
+  for(let row=0; row<6; row++){
+    const filledIndices=[];
+    const emptyIndices=[];
+    for(let col=0; col<5; col++){
+      if(cells[row][col].classList.contains("filled")) filledIndices.push(col);
+      else emptyIndices.push(col);
+    }
+
+    const possible = dictionary.filter(w=>{
+      for(const idx of filledIndices){
+        if(w[idx] !== word[idx]) return false;
+      }
+      for(const idx of emptyIndices){
+        if(w[idx] === word[idx]) return false;
+      }
+      return true;
+    });
+
+    if(possible.length > 0) sequence.push(possible[0]);
+    else sequence.push("(no match)");
+  }
+
+  document.getElementById("suggestions").innerHTML =
+    "<h3>Suggested Word Sequence:</h3>" +
+    sequence.join("<br>");
+}
+</script>
+
+</body>
+</html>
