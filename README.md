@@ -1,1 +1,1 @@
-https://spicyweedtimmothyoh.github.io/wordleart/
+https://zakuakyt.github.io/wordleart/
